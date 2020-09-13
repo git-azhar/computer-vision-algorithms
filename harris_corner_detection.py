@@ -1,8 +1,10 @@
-from scipy.ndimage import filters
+import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
+from scipy.ndimage import filters
 
 
-def compute_harris_response(image, sigma: int = 5) -> float:
+def compute_harris_response(image, sigma: int = 5):
     """ Compute Harris corner detection response function for each pixel in an image (grayscale)"""
 
     # derivatives
@@ -54,5 +56,24 @@ def get_harris_points(harris_image, min_dist: int = 10, threshold: float = 0.1):
         if allowed_positions[coordinates[i, 0], coordinates[i, 1]] == 1:
             filtered_coords.append(coordinates[i])
             allowed_positions[(coordinates[i, 0] - min_dist): (coordinates[i, 1] + min_dist),
-             (coordinates[i, 1] - min_dist):(coordinates[i, 1] + min_dist)] = 0
+            (coordinates[i, 1] - min_dist):(coordinates[i, 1] + min_dist)] = 0
     return filtered_coords
+
+
+def plot_harris_points(image: np.array, filtered_coordinates: list):
+    """
+    Plots corners found in image
+    """
+    print('plotting')
+    plt.figure()
+    plt.gray()
+    plt.imshow(image)
+    plt.plot([p[1] for p in filtered_coordinates], [p[0] for p in filtered_coordinates], 'o')
+    plt.axis('off')
+    plt.show()
+
+
+img = np.array(Image.open('images/house.jpg').convert('L'))
+harris_img = compute_harris_response(img)
+filtered_coords = get_harris_points(harris_img, 6)
+plot_harris_points(img, filtered_coords)
