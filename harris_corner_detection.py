@@ -87,8 +87,7 @@ def match(desc1, desc2, thresh: float = 0.5):
     """
     for each descriptor in the first image select its match to second image using normalized cross correlation
     """
-    # n = len(desc1[0])
-    n = len(desc1)
+    n = len(desc1[0])
 
     # pair-wise distances
     d = -np.ones((len(desc1), len(desc2)))
@@ -124,8 +123,6 @@ def match_two_sided(desc1, desc2, thresh: float = 0.5):
 img = np.array(Image.open('images/house.jpg').convert('L'))
 harris_img = compute_harris_response(img)
 filtered_coords = get_harris_points(harris_img, 6)
-# plot_harris_points(img, filtered_coords)
+plot_harris_points(img, filtered_coords)
 
 
-descriptors = get_descriptors(img, filtered_coords)
-print(f'match_score = {match(descriptors[0], descriptors[4])}')
