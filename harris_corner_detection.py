@@ -3,6 +3,8 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import filters
 
+from image_utils import append_images
+
 
 def compute_harris_response(image, sigma: int = 5):
     """ Compute Harris corner detection response function for each pixel in an image (grayscale)"""
@@ -88,13 +90,12 @@ def match(desc1, desc2, thresh: float = 0.5):
     for each descriptor in the first image select its match to second image using normalized cross correlation
     """
     n = len(desc1[0])
-
     # pair-wise distances
     d = -np.ones((len(desc1), len(desc2)))
     for i in range(len(desc1)):
         for j in range(len(desc2)):
-            d1 = (desc1[i] - np.mean(desc1)) / np.std(desc1)
-            d2 = (desc2[i] - np.mean(desc2)) / np.std(desc2)
+            d1 = (desc1[i] - np.mean(desc1[i])) / np.std(desc1[i])
+            d2 = (desc2[j] - np.mean(desc2[j])) / np.std(desc2[j])
             ncc_value = np.sum(d1 * d2) / (n - 1)
             if ncc_value > thresh:
                 d[i, j] = ncc_value
@@ -120,9 +121,44 @@ def match_two_sided(desc1, desc2, thresh: float = 0.5):
     return matches_12
 
 
-img = np.array(Image.open('images/house.jpg').convert('L'))
-harris_img = compute_harris_response(img)
-filtered_coords = get_harris_points(harris_img, 6)
-plot_harris_points(img, filtered_coords)
+def plot_matches(image_1: np.array, image_2: np.array, locs_1, locs_2, match_score, show_below: bool = True):
+    """
+    Show a figure with lines joining the accepted matches
+    input: image_1, image_2 (images as array), locs_1, locs_2 (feature locations), match_score
+    show_below : if images are to be shown below matches
+    """
+    appended_image = append_images(image_1, image_2)
+    if show_below:
+        appended_image = np.vstack((appended_image, appended_image))
+    plt.imshow(appended_image)
+
+    columns_1 = image_1.shape[1]
+    for i, m in enumerate(match_score):
+        if m > 0:
+            plt.plot([locs_1[i][1], locs_2[m][1] + columns_1], [locs_1[i][0], locs_2[m][0]], 'c')
+            plt.axis('off')
 
 
+img1 = np.array(Image.open('images/house.jpg').convert('L'))
+img2 = np.array(Image.open('images/house.jpg').convert('L'))
+wid = 100
+
+harris_img = compute_harris_response(img1, 5)
+plt.figure()
+plt.imshow(harris_img)
+plt.show()
+filtered_coords1 = get_harris_points(harris_img, wid + 1)
+d1 = get_descriptors(img1, filtered_coords1, wid)
+
+harris_img = compute_harris_response(img2, 5)
+filtered_coords2 = get_harris_points(harris_img, wid + 1)
+d2 = get_descriptors(img2, filtered_coords2, wid)
+
+print('[INFO] Starting Matching ')
+matches = match_two_sided(d1, d2)
+print('[INFO] match complete')
+
+plt.figure()
+plt.gray()
+plot_matches(img1, img2, filtered_coords1, filtered_coords2, matches)
+plt.show()
